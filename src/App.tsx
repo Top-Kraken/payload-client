@@ -3,6 +3,7 @@ import './App.css';
 import './tailwind.css';
 import Payload from './abis/Payload.json';
 import {ethers} from "ethers";
+import Web3 from 'web3';
 
 import { useWeb3React, UnsupportedChainIdError } from '@web3-react/core'
 import {
@@ -10,6 +11,8 @@ import {
     UserRejectedRequestError as UserRejectedRequestErrorInjected,
 } from '@web3-react/injected-connector'
 import { injectedConnector } from "./connectors";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   
@@ -38,17 +41,29 @@ function App() {
   const connect = async() => {
     activate(injectedConnector, async (error: Error) => {
       if (error instanceof UnsupportedChainIdError) {
-          alert('Unsupported Chain Id Error. Check your chain Id.')
+        showError('Unsupported Chain Id Error. Check your chain Id.')
       } else if (error instanceof NoEthereumProviderError) {
-          alert('You need to install MetaMask extension.')
+        showError('You need to install MetaMask extension.')
       } else if (
           error instanceof UserRejectedRequestErrorInjected
       ) {
-          alert('Please authorize to access your account')
+        showError('Please authorize to access your account')
       } else {
-          alert(error.message)
+        showError(error.message)
       }
     })
+  }
+  
+  const showError = (msg: string) => {
+    toast.error(msg, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      });
   }
 
   const callFunc = async() => {
@@ -57,25 +72,56 @@ function App() {
     const signer = await provider.getSigner()
     const payloadContract = new ethers.Contract(Payload.address, Payload.abi, signer);
     
-    if ( param6 === '' ) {
-      if ( param5 === '' ) {
-        if ( param4 === '' ) {
-          if ( param3 === '' ) {
-            if ( param2 === '' ) {
-              if ( param1 === '' ) {
-                return await payloadContract.functions['M()']();
+    try {
+      if ( param6 === '' ) {
+        if ( param5 === '' ) {
+          if ( param4 === '' ) {
+            if ( param3 === '' ) {
+              if ( param2 === '' ) {
+                if ( param1 === '' ) {
+                  return await payloadContract.functions['M()']();
+                }
+                return await payloadContract.functions['M(uint256)'](
+                  ethers.utils.parseUnits(param1, 18)
+                );
               }
-              return await payloadContract.functions['M(uint256)'](param1);
+              return await payloadContract.functions['M(uint256,uint256)'](
+                ethers.utils.parseUnits(param1, 18),
+                ethers.utils.parseUnits(param2, 18)
+              );
             }
-            return await payloadContract.functions['M(uint256,uint256)'](param1, param2);
+            return await payloadContract.functions['M(uint256,uint256,uint256)'](
+              ethers.utils.parseUnits(param1, 18), 
+              ethers.utils.parseUnits(param2, 18), 
+              ethers.utils.parseUnits(param3, 18)
+            );
           }
-          return await payloadContract.functions['M(uint256,uint256,uint256)'](param1, param2, param3);
+          return await payloadContract.functions['M(uint256,uint256,uint256,address)'](
+            ethers.utils.parseUnits(param1, 18), 
+            ethers.utils.parseUnits(param2, 18), 
+            ethers.utils.parseUnits(param3, 18), 
+            param4
+          );
         }
-        return await payloadContract.functions['M(uint256,uint256,uint256,address)'](param1, param2, param3, param4);
+        return await payloadContract.functions['M(uint256,uint256,uint256,address,uint256)'](
+          ethers.utils.parseUnits(param1, 18), 
+          ethers.utils.parseUnits(param2, 18), 
+          ethers.utils.parseUnits(param3, 18), 
+          param4, 
+          ethers.utils.parseUnits(param5, 18)
+        );
       }
-      return await payloadContract.functions['M(uint256,uint256,uint256,address,uint256)'](param1, param2, param3, param4, param5);
+      return await payloadContract.functions['M(uint256,uint256,uint256,address,uint256,uint256)'](
+        ethers.utils.parseUnits(param1, 18), 
+        ethers.utils.parseUnits(param2, 18), 
+        ethers.utils.parseUnits(param3, 18), 
+        param4, 
+        ethers.utils.parseUnits(param5, 18), 
+        ethers.utils.parseUnits(param6, 18)
+      )
+    } catch (err: any) {
+      showError(err["error"]["message"]);
     }
-    return await payloadContract.functions['M(uint256,uint256,uint256,address,uint256,uint256)'](param1, param2, param3, param4, param5, param6);
   }
 
   const getFunc = async() => {
@@ -84,16 +130,27 @@ function App() {
     const signer = await provider.getSigner()
     const payloadContract = new ethers.Contract(Payload.address, Payload.abi, signer);
 
-    setUpdatedParam1((await payloadContract.param1()).toString());
-    setUpdatedParam2((await payloadContract.param2()).toString());
-    setUpdatedParam3((await payloadContract.param3()).toString());
+    setUpdatedParam1(ethers.utils.formatEther((await payloadContract.param1()).toString()));
+    setUpdatedParam2(ethers.utils.formatEther((await payloadContract.param2()).toString()));
+    setUpdatedParam3(ethers.utils.formatEther((await payloadContract.param3()).toString()));
     setUpdatedParam4((await payloadContract.param4()).toString());
-    setUpdatedParam5((await payloadContract.param5()).toString());
-    setUpdatedParam6((await payloadContract.param6()).toString());
+    setUpdatedParam5(ethers.utils.formatEther((await payloadContract.param5()).toString()));
+    setUpdatedParam6(ethers.utils.formatEther((await payloadContract.param6()).toString()));
   }
 
   return (
     <div className="bg-background text-white min-h-screen py-4 bg-cover bg-center mint">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
       <div className="header justify-between items-center px-4 py-2 md:py-0  max-w-7xl mx-auto">
           <div className="flex justify-center py-5">
             <div className='font-bold text-2xl ml-auto mt-auto mb-auto'>Reduce Transaction Payload</div>
